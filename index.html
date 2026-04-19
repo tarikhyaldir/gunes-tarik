@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#E8DFCE"/>
+<title>Güneş & Tarık — Düğün Davetiyesi</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E8DFCE;-webkit-font-smoothing:antialiased}
+#root{min-height:100vh}
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect}=React;
+
+const SHEET_URL="https://script.google.com/macros/s/AKfycbyZcYxjkHw22VQtCrgeH-Ivg_0ieyfDAUrBXlxabqEcygI-CeXTKDmQQ40sFpBeTBnybA/exec";
+const STORE_KEY="gt_rsvp_user";
+const BG_URL="background.png";
+
+const ev={
+  bride:"Güneş",groom:"Tarık",
+  bf:{n:"Ömür Türkan & Dündar",s:"GÜNGÖR"},
+  gf:{n:"Hülya & Abdulkadir",s:"YALDIR"},
+  dateD:"16 Mayıs 2026",dateS:"16.05.2026",
+  dateLong:"16 MAYIS 2026 · CUMARTESİ",
+  times:[{l:"Başlangıç",t:"19:00"},{l:"Nikah",t:"20:00"},{l:"Yemek",t:"20:30"}],
+  venue:"Viamor Deluxe",venueLoc:"Viamor Deluxe, Denizli",
+  map:"https://maps.app.goo.gl/s6kWSdKsjAmvepsDA",
+  target:new Date("2026-05-16T19:00:00"),
+};
+
+/* Palette matching the romantic blue-sky image */
+const P = {
+  bg:       "#E8DFCE",       // warm cream beige (outer)
+  card:     "#F5EADA",       // matching cream
+  blue:     "#3A4A62",       // deeper muted slate (strong readable)
+  blueD:    "#1E2B42",       // almost navy for main text
+  blueL:    "#8A9AB0",
+  gold:     "#7A5828",       // rich bronze (accents, labels)
+  goldD:    "#5A3E18",       // dark bronze
+  goldL:    "#B89868",
+  sage:     "#5E6E4A",       // muted olive
+  rose:     "#A66878",
+  text:     "#2E2618",       // very dark warm brown for body
+  muted:    "#6E5A42",       // warm sepia for subtle text
+  paper:    "#EFE4D0",       // warm ivory card
+  paperDark:"#E0D4BC",
+};
+
+const mkI=f=>({width:"100%",padding:"11px 16px",background:"rgba(255,255,255,0.85)",border:`1.5px solid ${f?P.blue:P.blueL}`,color:P.blueD,fontFamily:"'Cormorant Garamond',serif",fontSize:16,outline:"none",boxSizing:"border-box",transition:"all 0.2s"});
+const lb={fontSize:10,letterSpacing:"0.28em",textTransform:"uppercase",color:P.blue,display:"block",marginBottom:8,fontFamily:"'Cinzel',serif",fontWeight:500};
+const btnG={background:`linear-gradient(135deg,${P.blue},${P.blueD})`,color:"#F5EADA",border:"none",padding:"14px 44px",fontFamily:"'Cinzel',serif",fontSize:12.5,letterSpacing:"0.22em",cursor:"pointer",textTransform:"uppercase",boxShadow:`0 3px 16px rgba(30,43,66,0.35)`,fontWeight:500};
+const btnS={background:"transparent",color:P.blue,border:`1.5px solid ${P.blueL}`,padding:"12px 24px",fontFamily:"'Cinzel',serif",fontSize:10.5,letterSpacing:"0.18em",cursor:"pointer",textTransform:"uppercase"};
+
+function FI({label,value,onChange,placeholder,type="text"}){const[f,sf]=useState(false);return <div><label style={lb}>{label}</label><input type={type} style={mkI(f)} value={value} onChange={onChange} placeholder={placeholder} onFocus={()=>sf(true)} onBlur={()=>sf(false)}/></div>;}
+function FTA({label,value,onChange,placeholder}){const[f,sf]=useState(false);return <div><label style={lb}>{label}</label><textarea style={{...mkI(f),minHeight:70,resize:"none"}} value={value} onChange={onChange} placeholder={placeholder} onFocus={()=>sf(true)} onBlur={()=>sf(false)}/></div>;}
+
+function DotDiv({my=14,color}){
+  const c = color || P.gold;
+  return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,margin:`${my}px 0`}}>
+      <div style={{flex:1,maxWidth:60,borderTop:`1px dotted ${c}`,opacity:0.7}}/>
+      <svg width="18" height="10" viewBox="0 0 18 10">
+        <circle cx="9" cy="5" r="2.5" fill="none" stroke={c} strokeWidth="0.8"/>
+        <circle cx="9" cy="5" r="1" fill={c}/>
+      </svg>
+      <div style={{flex:1,maxWidth:60,borderTop:`1px dotted ${c}`,opacity:0.7}}/>
+    </div>
+  );
+}
+
+function Tile({v,l}){
+  return(
+    <div style={{flex:1,textAlign:"center"}}>
+      <div style={{border:`1px solid ${P.blueL}`,padding:"10px 4px 8px",background:"rgba(253,250,243,0.9)"}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:34,fontWeight:500,color:P.blueD,lineHeight:1}}>{String(v).padStart(2,"0")}</div>
+        <div style={{fontFamily:"'Cinzel',serif",fontSize:9,letterSpacing:"0.22em",color:P.gold,marginTop:5,textTransform:"uppercase",fontWeight:500}}>{l}</div>
+      </div>
+    </div>
+  );
+}
+
+function CalButtons(){
+  const gUrl=()=>{const p=new URLSearchParams({action:"TEMPLATE",text:`${ev.bride} & ${ev.groom} Düğünü`,dates:"20260516T160000Z/20260516T200000Z",details:"Viamor Deluxe",location:"Viamor Deluxe, Denizli"});return`https://calendar.google.com/calendar/render?${p}`;};
+  const ics=()=>{const d=["BEGIN:VCALENDAR","VERSION:2.0","BEGIN:VEVENT","DTSTART:20260516T160000Z","DTEND:20260516T200000Z",`SUMMARY:${ev.bride} & ${ev.groom} Düğünü`,"LOCATION:Viamor Deluxe\\, Denizli","END:VEVENT","END:VCALENDAR"].join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([d],{type:"text/calendar"}));a.download="gunes-tarik.ics";a.click();};
+  const bs={display:"inline-flex",alignItems:"center",gap:6,padding:"9px 18px",border:`1px solid ${P.blueL}`,background:"rgba(253,250,243,0.85)",fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:"0.18em",color:P.blueD,cursor:"pointer",textDecoration:"none",textTransform:"uppercase",fontWeight:500};
+  return(
+    <div style={{textAlign:"center"}}>
+      <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.4em",color:P.goldD,marginBottom:14,textTransform:"uppercase",fontWeight:600}}>Takvime Ekle</div>
+      <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+        <a href={gUrl()} target="_blank" rel="noopener noreferrer" style={bs}>Google</a>
+        <button onClick={ics} style={bs}>Apple / Outlook</button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const[view,sv]=useState("invitation");
+  const[form,sf]=useState({name:"",attending:"yes",guests:1,note:""});
+  const[cd,sc]=useState({days:0,hours:0,mins:0,secs:0});
+  const[loaded,sl]=useState(false);
+  const[sub,ss]=useState(false);
+  const[prev,sp]=useState(null);
+  const[wasUpd,swu]=useState(false);
+  const[adIn,sai]=useState("");
+  const[adOk,sao]=useState(false);
+
+  useEffect(()=>{
+    const lk=document.createElement("link");lk.rel="stylesheet";
+    lk.href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600&family=Lato:wght@300;400&display=swap";
+    document.head.appendChild(lk);
+    setTimeout(()=>sl(true),200);
+    try{const s=localStorage.getItem(STORE_KEY);if(s){const p=JSON.parse(s);sp(p);sf(p);}}catch{}
+  },[]);
+
+  useEffect(()=>{
+    const t=()=>{const d=ev.target-new Date();if(d<=0){sc({days:0,hours:0,mins:0,secs:0});return;}sc({days:Math.floor(d/86400000),hours:Math.floor((d%86400000)/3600000),mins:Math.floor((d%3600000)/60000),secs:Math.floor((d%60000)/1000)});};
+    t();const id=setInterval(t,1000);return()=>clearInterval(id);
+  },[]);
+
+  const submit=async()=>{
+    if(!form.name.trim())return;swu(!!prev);ss(true);
+    try{await fetch(SHEET_URL,{method:"POST",mode:"no-cors",body:JSON.stringify({name:form.name,attending:form.attending,guests:form.attending==="yes"?form.guests:"-",note:form.note||""})});
+    localStorage.setItem(STORE_KEY,JSON.stringify(form));sp(form);}catch{}
+    ss(false);sv("confirmation");
+  };
+
+  if(!loaded)return null;
+
+  const outerBg={minHeight:"100vh",background:P.bg,padding:"20px 14px",fontFamily:"'Lato',sans-serif"};
+
+  /* ══ INVITATION — text placed DIRECTLY on the image ══ */
+  if(view==="invitation")return(
+    <div style={outerBg}>
+      <style>{`
+        @keyframes fuI{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+        .iA1{animation:fuI 1.2s 0.2s both}.iA2{animation:fuI 1.2s 0.5s both}.iA3{animation:fuI 1.2s 0.8s both}.iA4{animation:fuI 1.2s 1.1s both}
+        input::placeholder,textarea::placeholder{color:${P.muted};opacity:0.6}
+        select option{background:#FFF;color:${P.text}}
+      `}</style>
+
+      <div style={{maxWidth:520,margin:"0 auto"}}>
+        {/* IMAGE + OVERLAY */}
+        <div style={{
+          position:"relative",
+          aspectRatio:"1694/2528",
+          backgroundImage:`url(${BG_URL})`,
+          backgroundSize:"cover",
+          backgroundPosition:"center",
+          boxShadow:"0 12px 40px rgba(46,63,92,0.2)",
+        }}>
+          {/* Overlay container — positioned absolutely over image */}
+          <div style={{position:"absolute",inset:0,padding:"16% 11% 8%",display:"flex",flexDirection:"column"}}>
+
+            {/* NAMES - big script, top center area (sky) */}
+            <div className="iA1" style={{textAlign:"center",marginBottom:"3%"}}>
+              <div style={{
+                fontFamily:"'Allura',cursive",
+                fontSize:"clamp(64px,16vw,112px)",
+                color:P.goldD,lineHeight:1.1,
+                paddingTop:10,paddingBottom:6,
+                textShadow:"0 1px 12px rgba(255,255,255,0.9), 0 0 3px rgba(255,255,255,1)",
+                fontWeight:400,
+              }}>{ev.bride}</div>
+              <div style={{
+                fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",
+                fontSize:"clamp(22px,5vw,34px)",color:P.gold,margin:"-3% 0",
+                textShadow:"0 1px 6px rgba(255,255,255,0.8)",fontWeight:500,
+              }}>&amp;</div>
+              <div style={{
+                fontFamily:"'Allura',cursive",
+                fontSize:"clamp(64px,16vw,112px)",
+                color:P.goldD,lineHeight:1.1,
+                paddingTop:6,paddingBottom:4,
+                textShadow:"0 1px 12px rgba(255,255,255,0.9), 0 0 3px rgba(255,255,255,1)",
+                fontWeight:400,
+              }}>{ev.groom}</div>
+            </div>
+
+            {/* Opening text */}
+            <div className="iA2" style={{
+              textAlign:"center",margin:"2% 0",
+              fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",
+              fontSize:"clamp(16px,4vw,22px)",color:P.goldD,lineHeight:1.65,fontWeight:500,
+              textShadow:"0 1px 6px rgba(255,255,255,0.85)",
+            }}>
+              Mutlu günümüzde sizleri de aramızda<br/>görmekten onur duyarız.
+            </div>
+
+            {/* Families - two lines per family */}
+            <div className="iA2" style={{display:"flex",margin:"3% 0 2%",gap:0,padding:"0 4%"}}>
+              {[ev.bf, ev.gf].map((f,i) => (
+                <div key={i} style={{flex:1,textAlign:"center"}}>
+                  <div style={{
+                    fontFamily:"'Cormorant Garamond',serif",
+                    fontSize:"clamp(12px,3vw,15px)",fontStyle:"italic",
+                    color:P.goldD,lineHeight:1.6,fontWeight:500,
+                    textShadow:"0 1px 4px rgba(255,255,255,0.85)",
+                  }}>{f.n}</div>
+                  <div style={{
+                    fontFamily:"'Cinzel',serif",fontSize:"clamp(13px,3.2vw,16px)",
+                    letterSpacing:"0.2em",color:P.blueD,fontWeight:600,lineHeight:1.4,
+                    textShadow:"0 1px 4px rgba(255,255,255,0.85)",marginTop:2,
+                  }}>{f.s}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Spacer pushes date to bottom area (below bench) */}
+            <div style={{flex:1,minHeight:"15%"}}/>
+
+            {/* Date & venue - placed near bottom in empty area below bench */}
+            <div className="iA3" style={{textAlign:"center",marginTop:"auto",paddingBottom:"2%"}}>
+              <div style={{
+                fontFamily:"'Cinzel',serif",fontSize:"clamp(13px,3.2vw,16px)",
+                letterSpacing:"0.28em",color:P.blueD,fontWeight:600,marginBottom:8,
+                textShadow:"0 1px 6px rgba(255,255,255,0.95), 0 0 2px rgba(255,255,255,1)",
+              }}>{ev.dateLong}</div>
+              <div style={{
+                fontFamily:"'Cormorant Garamond',serif",
+                fontSize:"clamp(15px,3.8vw,20px)",color:P.blueD,fontStyle:"italic",fontWeight:500,
+                textShadow:"0 1px 6px rgba(255,255,255,0.95), 0 0 2px rgba(255,255,255,1)",
+              }}>{ev.venueLoc}</div>
+            </div>
+
+
+          </div>
+        </div>
+
+        {/* Functional content BELOW image, on cream card */}
+        <div className="iA4" style={{
+          background:P.paper,padding:"32px 28px",marginTop:16,
+          border:`1px solid ${P.blueL}`,
+          boxShadow:"0 6px 24px rgba(46,63,92,0.12)",
+          position:"relative",
+        }}>
+          {/* Decorative top ornament */}
+          <div style={{textAlign:"center",marginBottom:18}}>
+            <svg width="80" height="14" viewBox="0 0 80 14">
+              <line x1="0" y1="7" x2="28" y2="7" stroke={P.goldD} strokeWidth="0.8" opacity="0.7"/>
+              <path d="M28 7 L34 3 L36 7 L34 11 Z" fill={P.goldD}/>
+              <circle cx="40" cy="7" r="2.5" fill="none" stroke={P.goldD} strokeWidth="0.9"/>
+              <circle cx="40" cy="7" r="1" fill={P.goldD}/>
+              <path d="M44 7 L46 3 L52 7 L46 11 Z" fill={P.goldD}/>
+              <line x1="52" y1="7" x2="80" y2="7" stroke={P.goldD} strokeWidth="0.8" opacity="0.7"/>
+            </svg>
+          </div>
+
+          {/* Programme */}
+          <div style={{marginBottom:18}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.55em",color:P.goldD,textAlign:"center",marginBottom:16,textTransform:"uppercase",fontWeight:600}}>Günün Programı</div>
+            <div style={{display:"flex",border:`1px solid ${P.blueL}`,background:"rgba(253,250,243,0.7)"}}>
+              {ev.times.map((t,i)=>(
+                <div key={i} style={{flex:1,textAlign:"center",padding:"12px 4px",borderLeft:i>0?`1px solid ${P.blueL}`:"none"}}>
+                  <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.18em",color:P.gold,textTransform:"uppercase",marginBottom:8,fontWeight:500}}>{t.l}</div>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:30,fontWeight:500,color:P.blueD}}>{t.t}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DotDiv/>
+
+          {/* Venue */}
+          <div style={{textAlign:"center",padding:"14px 0"}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.45em",color:P.goldD,textTransform:"uppercase",marginBottom:12,fontWeight:600}}>Konum</div>
+            <div style={{fontFamily:"'Allura',cursive",fontSize:52,color:P.blueD,lineHeight:1.3}}>{ev.venue}</div>
+            <a href={ev.map} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:12,padding:"9px 22px",border:`1px solid ${P.blueL}`,background:"rgba(253,250,243,0.85)",fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.2em",color:P.blueD,textDecoration:"none",textTransform:"uppercase",fontWeight:500}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke={P.blueD} strokeWidth="1.5" fill="rgba(74,95,126,0.2)"/><circle cx="12" cy="9" r="2.5" stroke={P.blueD} strokeWidth="1.2"/></svg>
+              Yol Tarifi
+            </a>
+          </div>
+
+          <DotDiv/>
+
+          {/* Countdown */}
+          <div style={{padding:"14px 0"}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:11,letterSpacing:"0.4em",color:P.goldD,textAlign:"center",marginBottom:14,textTransform:"uppercase",fontWeight:600}}>Düğüne Kalan</div>
+            <div style={{display:"flex",gap:6}}><Tile v={cd.days} l="Gün"/><Tile v={cd.hours} l="Saat"/><Tile v={cd.mins} l="Dak"/><Tile v={cd.secs} l="Sn"/></div>
+          </div>
+
+          <DotDiv/>
+
+          {/* Calendar */}
+          <div style={{padding:"12px 0"}}><CalButtons/></div>
+
+          <DotDiv/>
+
+          {/* RSVP */}
+          <div style={{textAlign:"center",padding:"16px 0 4px"}}>
+            {prev&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",fontSize:15,color:P.muted,marginBottom:14}}><span style={{color:P.blueD,fontWeight:500}}>{prev.name}</span> olarak bildiriminiz alındı.</div>}
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",fontSize:17,color:P.text,lineHeight:1.85,marginBottom:20}}>
+              Katılım durumunuzu en kısa sürede<br/>bildirmenizi rica ederiz.
+            </div>
+            <button style={btnG} onClick={()=>sv("rsvp")}>{prev?"Bildirimimi Güncelle":"Katılım Bildir"}</button>
+            <div style={{marginTop:14}}>
+              <button style={{background:"none",border:"none",color:P.muted,cursor:"pointer",fontSize:12,letterSpacing:"0.2em",opacity:0.5}} onClick={()=>sv("admin")}>···</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ══ RSVP ══ */
+  if(view==="rsvp")return(
+    <div style={outerBg}>
+      <style>{`input::placeholder,textarea::placeholder{color:${P.muted};opacity:0.6}select option{background:#FFF;color:${P.text}}`}</style>
+      <div style={{maxWidth:440,margin:"0 auto"}}>
+        <div style={{background:P.paper,border:`1px solid ${P.blueL}`,padding:"36px 28px",boxShadow:"0 6px 24px rgba(46,63,92,0.12)"}}>
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:"0.45em",color:P.gold,textTransform:"uppercase",marginBottom:10,fontWeight:500}}>{prev?"Bildirim Güncelle":"Katılım Bildirimi"}</div>
+            <div style={{fontFamily:"'Allura',cursive",fontSize:44,color:P.blueD,lineHeight:1.3,paddingTop:4}}>{ev.bride} &amp; {ev.groom}</div>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:10,color:P.blue,marginTop:6,letterSpacing:"0.22em",fontWeight:500}}>{ev.dateS}</div>
+          </div>
+          <DotDiv my={4}/>
+          <div style={{display:"flex",flexDirection:"column",gap:16,marginTop:20}}>
+            <FI label="Ad Soyad *" value={form.name} onChange={e=>sf({...form,name:e.target.value})} placeholder="Adınız ve soyadınız"/>
+            <div>
+              <label style={lb}>Katılım *</label>
+              <div style={{display:"flex",gap:8}}>
+                {[{v:"yes",l:"Evet, Gelirim"},{v:"no",l:"Gelemiyorum"}].map(o=>(
+                  <div key={o.v} onClick={()=>sf({...form,attending:o.v})} style={{flex:1,textAlign:"center",padding:"13px 8px",cursor:"pointer",border:`1.5px solid ${form.attending===o.v?P.blue:P.blueL}`,background:form.attending===o.v?`rgba(74,95,126,0.15)`:"rgba(253,250,243,0.7)",color:form.attending===o.v?P.blueD:P.blue,fontFamily:"'Cinzel',serif",fontSize:10.5,letterSpacing:"0.1em",transition:"all 0.2s",textTransform:"uppercase",fontWeight:500}}>{o.l}</div>
+                ))}
+              </div>
+            </div>
+            {form.attending==="yes"&&<div><label style={lb}>Kaç Kişi?</label><select style={{...mkI(false),cursor:"pointer",appearance:"none"}} value={form.guests} onChange={e=>sf({...form,guests:e.target.value})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n} kişi</option>)}</select></div>}
+            <FTA label="Not (isteğe bağlı)" value={form.note} onChange={e=>sf({...form,note:e.target.value})} placeholder="Eklemek istediğiniz bir şey..."/>
+            <div style={{display:"flex",gap:10,marginTop:6}}>
+              <button style={btnS} onClick={()=>sv("invitation")}>Geri</button>
+              <button style={{...btnG,flex:1,opacity:form.name.trim()?1:0.5}} onClick={submit}>{sub?"Gönderiliyor...":"Gönder"}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ══ CONFIRMATION ══ */
+  if(view==="confirmation")return(
+    <div style={{...outerBg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{maxWidth:400,width:"100%",background:P.paper,border:`1px solid ${P.blueL}`,padding:"48px 32px",textAlign:"center",boxShadow:"0 6px 24px rgba(46,63,92,0.12)"}}>
+        <div style={{fontFamily:"'Allura',cursive",fontSize:54,color:P.blueD,lineHeight:1.2,paddingTop:6}}>{form.attending==="yes"?"Teşekkürler":"Anlıyoruz"}</div>
+        <DotDiv/>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:P.blueD,margin:"14px 0 10px",fontWeight:500}}>{form.name}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",fontSize:15,color:P.text,lineHeight:1.9,marginBottom:28}}>
+          {form.attending==="yes"?`${wasUpd?"Bildiriminiz güncellendi.":"Yanıtınız alındı."} ${ev.dateD} günü sizi aramızda görmekten büyük mutluluk duyacağız.`:`${wasUpd?"Bildiriminiz güncellendi.":"Yanıtınız alındı."} Umarız başka özel günlerde bir arada oluruz.`}
+        </div>
+        <button style={btnG} onClick={()=>sv("invitation")}>Daveti Görüntüle</button>
+      </div>
+    </div>
+  );
+
+  /* ══ ADMIN ══ */
+  if(view==="admin")return(
+    <div style={outerBg}>
+      <style>{`input::placeholder{color:${P.muted};opacity:0.6}`}</style>
+      <div style={{maxWidth:480,margin:"0 auto"}}>
+        <div style={{background:P.paper,border:`1px solid ${P.blueL}`,padding:"36px 28px",boxShadow:"0 6px 24px rgba(46,63,92,0.12)"}}>
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <div style={{fontFamily:"'Cinzel',serif",fontSize:10,letterSpacing:"0.45em",color:P.gold,textTransform:"uppercase",marginBottom:10,fontWeight:500}}>Misafir Listesi</div>
+            <div style={{fontFamily:"'Allura',cursive",fontSize:38,color:P.blueD,paddingTop:4}}>{ev.bride} &amp; {ev.groom}</div>
+          </div>
+          <DotDiv my={4}/>
+          {!adOk?(
+            <div style={{textAlign:"center",marginTop:22}}>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",fontSize:15,color:P.text,marginBottom:18}}>Bu sayfayı görüntülemek için şifre gereklidir.</div>
+              <input type="password" style={{...mkI(false),maxWidth:220,margin:"0 auto 14px",textAlign:"center",display:"block"}} value={adIn} onChange={e=>sai(e.target.value)} placeholder="Şifre" onKeyDown={e=>e.key==="Enter"&&adIn==="gt2026"&&sao(true)}/>
+              <button style={btnG} onClick={()=>adIn==="gt2026"&&sao(true)}>Giriş</button>
+              <br/><button style={{...btnS,marginTop:12}} onClick={()=>sv("invitation")}>Geri</button>
+              <div style={{fontSize:9,color:P.muted,marginTop:12,opacity:0.6}}>Şifre: gt2026</div>
+            </div>
+          ):(
+            <>
+              <div style={{textAlign:"center",padding:"22px 0 16px"}}>
+                <div style={{fontFamily:"'Cormorant Garamond',serif",fontStyle:"italic",fontSize:15,color:P.text,lineHeight:1.8,marginBottom:20}}>Tüm katılım bildirimleri Google Sheets tablonuza kaydediliyor.</div>
+                <a href="https://docs.google.com/spreadsheets" target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:8,...btnG,textDecoration:"none"}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#FDF6E8" strokeWidth="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="#FDF6E8" strokeWidth="1.5"/><line x1="3" y1="15" x2="21" y2="15" stroke="#FDF6E8" strokeWidth="1.5"/><line x1="9" y1="9" x2="9" y2="21" stroke="#FDF6E8" strokeWidth="1.5"/></svg>
+                  Google Sheets Aç
+                </a>
+              </div>
+              <div style={{textAlign:"center",marginTop:8}}><button style={btnS} onClick={()=>sv("invitation")}>Davete Dön</button></div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
